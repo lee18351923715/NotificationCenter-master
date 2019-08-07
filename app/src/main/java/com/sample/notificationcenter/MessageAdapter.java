@@ -12,7 +12,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.Collections;
 import java.util.List;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
@@ -28,10 +27,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     //点击了取消全选
     public boolean checkNone;
 
-    public MessageAdapter(Context context, List<MessageBean> mlist) {
+    public MessageAdapter(Context context, List<MessageBean> list) {
         this.context = context;
-        Collections.reverse(mlist);
-        this.list = mlist;
+        this.list = list;
     }
 
     @NonNull

@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button leftButton;
     private Button rightButton;
 
+    private TextView tvUnread;
     private Button all;
     private Button read;
     private Button delete;
@@ -49,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean confirm;
 
     private List<Integer> selectedPosition = new ArrayList<>();
+
+    private int unread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         leftButton = findViewById(R.id.left_button);
         rightButton = findViewById(R.id.right_button);
 
+        tvUnread = findViewById(R.id.unread);
         all = findViewById(R.id.selectall_button);
         read = findViewById(R.id.readed_button);
         delete = findViewById(R.id.delete_main_button);
@@ -81,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         recyclerView = findViewById(R.id.message_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         //增加或减少条目动画效果，不要就注掉
-        //recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         if(getNews() == null){
             list = new ArrayList<>();
@@ -101,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (id) {
             case R.id.refresh_button:
                 setData();
+                updateUnRead();
                 break;
             case R.id.left_button:
             case R.id.right_button:
@@ -144,6 +150,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             bean.setChecked(isChecked);
             adapter.notifyItemChanged(position, bean.isChecked());
         }
+        updateUnRead();
+    }
+
+    private void updateUnRead() {
+        unread = 0;
+        for (int i = 0; i < list.size(); i++) {
+            if (!list.get(i).isRead()) {
+                unread ++;
+            }
+        }
+
+        if (unread == 0) {
+            tvUnread.setVisibility(View.GONE);
+        } else {
+            tvUnread.setVisibility(View.VISIBLE);
+            tvUnread.setText(String.valueOf(unread));
+        }
     }
 
     /**
@@ -161,7 +184,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     *
      * 右边界面的左右两个按钮的点击事件处理
      *
      * @param id
@@ -221,11 +243,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         for (int i = 0; i < selectedPosition.size(); i++) {
             MessageBean bean = list.get(selectedPosition.get(i));
             bean.setRead(true);
-            modify(bean);
         }
-        list = getNews();
-//        adapter = new MessageAdapter(this,list);
-
         adapter.notifyDataSetChanged();
         Toast.makeText(this, "已读", Toast.LENGTH_SHORT).show();
     }
@@ -271,6 +289,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bean.setChecked(false);
             }
             visibilityLayout.setVisibility(View.INVISIBLE);
+
+            updateUnRead();
         }
         adapter.editMode = editMode;
         adapter.notifyDataSetChanged();
@@ -312,7 +332,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     *
      * 设置列表中的选中项
      *
      * @param checked
@@ -441,77 +460,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 手动添加数据
      */
     private void setData() {
-        Uri newUri;
-        /**
-         * 点击刷新随机发送一条信息
-         */
-        int choice = (int)(Math.random()*10+1);
-        switch (choice){
+        int type = (int) (Math.random() * 10 + 1);
+        switch (type) {
             case 1:
-                ContentValues values1 = Utils.set("行程评分",
-                        "本次行驶距离：xx公里；油耗：xx;急加速：xx次；急减速：xx次，急转弯：xx次。建议减速慢行，平稳行驶，可减少油耗，降低安全风险，祝您用车愉快！",
-                        0,2);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values1);
+                list.add(0, new MessageBean("行程评分",
+                        "本次行驶距离：xx公里；油耗：xx;急加速：xx次；急减速：xx次，急转弯：xx次。建议减速慢行，平稳行驶，可减少油耗，降低安全风险，祝您用车愉快！", "2019-01-01", 0, 2));
                 break;
             case 2:
-                ContentValues values2 = Utils.set("车辆保养提醒",
-                        "尊敬的用户，累计行驶公里数，达到保养里程，请联系上汽大通官方4S店预约保养，谢谢。",0,3);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values2);
+                list.add(0, new MessageBean("车辆保养提醒",
+                        "尊敬的用户，累计行驶公里数，达到保养里程，请联系上汽大通官方4S店预约保养，谢谢。", "2019-01-01", 1, 3));
                 break;
             case 3:
-                ContentValues values3 = Utils.set("保养预约到期提醒",
-                        "尊敬的用户，您的爱车，在年月日时间有一次维保服务预约。预约门店地址：xxx，联系电话xxx。",0,4 );
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values3);
+                list.add(0, new MessageBean("保养预约到期提醒",
+                        "尊敬的用户，您的爱车，在年月日时间有一次维保服务预约。预约门店地址：xxx，联系电话xxx。", "2019-01-01", 1, 4));
                 break;
             case 4:
-                ContentValues values4 = Utils.set("车检提醒","您的【车辆昵称】还有xx天要进行车检，请于x年x月x日前去完成车检，谢谢。",0,6);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values4);
+                list.add(0, new MessageBean("车检提醒", "您的【车辆昵称】还有xx天要进行车检，请于x年x月x日前去完成车检，谢谢。", "2019-01-01", 1, 6));
                 break;
             case 5:
-                ContentValues values5 = Utils.set("目的地推送","您收到来自xxx发送的目的地：上海市杨浦区军工路2500号。",0,5);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values5);
+                list.add(0, new MessageBean("目的地推送", "您收到来自xxx发送的目的地：上海市杨浦区军工路2500号。", "2019-01-01", 1, 5));
                 break;
             case 6:
-                ContentValues values6 = Utils.set("行程提醒","15分钟后开车去公司。",0,5);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values6);
+                list.add(0, new MessageBean("行程提醒", "15分钟后开车去公司。", "2019-01-01", 0, 5));
                 break;
             case 7:
-                ContentValues values7 = Utils.set("低油量提醒","前油量偏低，点击前往附近加油站加油，保证车辆正常行驶",0,5);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values7);
+                list.add(0, new MessageBean("低油量提醒", "前油量偏低，点击前往附近加油站加油，保证车辆正常行驶", "2019-01-01", 0, 5));
                 break;
             case 8:
-                ContentValues values8 = Utils.set("可续里程不足","您的车辆可续里程不足以到达目的地，请前往最近加油站加油。",
-                        0,5);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values8);
+                list.add(0, new MessageBean("可续里程不足", "您的车辆可续里程不足以到达目的地，请前往最近加油站加油。", "2019-01-01", 0, 5));
                 break;
             case 9:
-                ContentValues values9 = Utils.set("天气提醒","明天有雨，请记得带伞。",0,2);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values9);
+                list.add(0, new MessageBean("天气提醒", "明天有雨，请记得带伞。", "2019-01-01", 0, 2));
                 break;
             case 10:
-                ContentValues values10 = Utils.set("促销活动","运营商提供的活动消息体", 0, 4);
-                newUri = getContentResolver().insert(MetaData.TableMetaData.CONTENT_URI,values10);
+                list.add(0, new MessageBean("促销活动", "运营商提供的活动消息体", "2019-01-01", 0, 4));
                 break;
         }
 
         if (adapter != null) {
-            if(list.size() == 0){
-                edit.setEnabled(false);
-            }else {
+            if (list.size() == 1) {
                 edit.setEnabled(true);
             }
 //            int lastPosition = list.size() - 1;
-//            //刷新列表数据
-//            adapter.notifyItemInserted(lastPosition);
-            list = getNews();
-            adapter = new MessageAdapter(this,list);
-            recyclerView.setAdapter(adapter);
+            //刷新列表数据
+            adapter.notifyItemInserted(0);
             /**
              * 如果不需要动画效果
              * 就删掉 adapter.notifyItemInserted(lastPosition);
              * 用 adapter.notifyDataSetChanged();
              */
-            //recyclerView.smoothScrollToPosition(lastPosition);
+            recyclerView.scrollToPosition(0);
         }
     }
     /**
@@ -537,6 +535,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mNewsList.add(news);
         }
         cursor.close();
+        Collections.reverse(mNewsList);
         return mNewsList;
     }
 
